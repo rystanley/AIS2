@@ -3,6 +3,8 @@ library(data.table)
 library(dplyr)
 library(reshape2)
 library(lubridate)
+library(readr)
+library(feather)
 
 #get list of data files
 files <- dir("data/")
@@ -24,29 +26,39 @@ mdata <- mdata[,c("MMSI","IMONumber","ShipType","ShipLength","ShipBeam","Draft")
 
 datafiles <- paste0("data/",files[grep("Msg1",files)])
 
+##Loop through and create files.
 
 for(ind in datafiles){
   
   temp <- fread(ind,header=T, stringsAsFactors=FALSE)
   
   #Data cleaning
-  temp <- temp[temp$MsgType==1,]
-  temp <- temp[,-grep("SourceFile|RecCnt",names(temp))]
+  temp <- as.data.frame(temp[temp$MsgType==1,])
+  cols <- as.numeric(setdiff(1:length(temp),grep("SourceFile|RecCnt",names(temp))))
+  temp <- temp[,cols] # get rid of the columns we don't need. 
   
+  temp%>%group_by(MMSI)%>%data.frame()%>%fwrite()
   
+  MMSIunique <- unique(temp$MMSI)
   
+  #create folder to dump files
+  if(length(which(list.files(getwd())=="MMSI files"))==0){dir.create(paste0(getwd(),"/MMSI_files"))} 
+  
+  for (i in MMSIunique){
+    dplyr::filter(temp,MMSI==i)%>%fwrite(.,file = paste0("MMSI_files/",i,".txt"),append=T)
+  }
   
 }
 
+## Merge each file with MMSI
+# for (ind in datafiles){
+#   
+#   temp <- temp <- fread(ind,header=T, stringsAsFactors=FALSE)
+#   temp <- merge(temp,mdata,by="MMSI")
+#   
+#   #S
+#   
+#   
+#   
+# }
 
-
-datafilter <- function(ind){
-  
-  
-  Vdata<-fread(paste0("data/TAIS_Msg1File_",ind,".txt"), header = TRUE, stringsAsFactors=FALSE)
-  hdata <- as.data.frame(fread(paste0("data/TAIS_Msg5File_",ind,".txt"),header = TRUE,stringsAsFactors = FALSE))
-  
-  expanddata <- merge(Vdata)
-  
-  
-} #end of datafilter function
