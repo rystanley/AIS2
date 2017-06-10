@@ -48,10 +48,7 @@ for(ind in datafiles){
   cols <- as.numeric(setdiff(1:length(temp),grep("SourceFile|RecCnt",names(temp))))
   temp <- temp[,cols] # get rid of the columns we don't need. 
   
-  temp%>%group_by(MMSI)%>%data.frame()%>%fwrite()
-  
   MMSIunique <- unique(temp$MMSI)
-  
   
   for (i in MMSIunique){
     dplyr::filter(temp,MMSI==i)%>%fwrite(.,file = paste0("MMSI_files/",i,".txt"),append=T)
